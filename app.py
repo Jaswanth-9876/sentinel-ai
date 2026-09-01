@@ -601,7 +601,7 @@ def main():
         )
 
 
-        with tab3:
+    with tab3:
 
             st.header(
                 "Decision Audit Trail"
@@ -617,30 +617,75 @@ def main():
 
             else:
 
-              st.metric(
-                  "Total Audit Records",
-                  len(audit_log)
-              )
+                total_records = len(audit_log)
 
-              st.dataframe(
-                  audit_log,
-                  use_container_width=True,
-                  height=500
-              )
+                high_risk = len(
+                    audit_log[
+                        audit_log["Decision"] == "HOLD"
+                    ]
+                )
 
-              audit_csv = audit_log.to_csv(
-                  index=False
-              ).encode(
-                  "utf-8"
-              )
+                review = len(
+                    audit_log[
+                        audit_log["Decision"] == "REVIEW"
+                    ]
+                )
 
-              st.download_button(
-                  "Download Audit Trail",
-                  audit_csv,
-                  "audit_log.csv",
-                  "text/csv",
-                  use_container_width=True
-              )
+                allowed = len(
+                    audit_log[
+                        audit_log["Decision"] == "ALLOW"
+                    ]
+                )
+
+
+                col1, col2, col3, col4 = st.columns(4)
+
+                with col1:
+                    st.metric(
+                        "Total Records",
+                        total_records
+                    )
+
+                with col2:
+                    st.metric(
+                        "High Risk",
+                        high_risk
+                    )
+
+                with col3:
+                    st.metric(
+                        "Review",
+                        review
+                    )
+
+                with col4:
+                    st.metric(
+                        "Allowed",
+                        allowed
+                    )
+
+
+                st.dataframe(
+                    audit_log,
+                    use_container_width=True,
+                    height=500
+                )
+
+                audit_csv = audit_log.to_csv(
+                    index=False
+                ).encode(
+                    "utf-8"
+                )
+
+                st.download_button(
+                    "Download Audit Trail",
+                    audit_csv,
+                    "audit_log.csv",
+                    "text/csv",
+                    use_container_width=True
+                )
+
+
 
 if __name__ == "__main__":
 
