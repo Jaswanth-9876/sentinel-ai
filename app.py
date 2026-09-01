@@ -6,6 +6,8 @@ import streamlit as st
 import requests
 import plotly.express as px
 
+from src.audit import save_audit_log, load_audit_log
+
 
 BASE_DIR = os.path.dirname(
     os.path.abspath(__file__)
@@ -17,7 +19,10 @@ METRICS_PATH = os.path.join(
     "metrics.json"
 )
 
-API_URL = "http://127.0.0.1:8000"
+API_URL = os.getenv(
+    "API_URL",
+    "https://sentinel-ai-6pcz.onrender.com"
+)
 
 
 st.set_page_config(
@@ -238,9 +243,9 @@ def main():
                         "Analyzing transactions..."
                     ):
                         API_URL = os.getenv(
-                              "API_URL",
-                              "https://sentinel-ai-6pcz.onrender.com"
-                          )
+                            "API_URL",
+                            "https://sentinel-ai-6pcz.onrender.com"
+                        )
 
                         response = requests.post(
                             f"{API_URL}/predict/csv",
@@ -264,6 +269,7 @@ def main():
                         results = pd.DataFrame(
                             api_response["results"]
                         )
+                        save_audit_log(results)
 
 
                     st.success(
@@ -595,91 +601,46 @@ def main():
         )
 
 
-    with tab3:
+        with tab3:
 
-        st.header(
-            "Decision Audit Trail"
-        )
-
-
-        try:
-
-            response = requests.get(
-                f"{API_URL}/health",
-                timeout=5
+            st.header(
+                "Decision Audit Trail"
             )
 
+            audit_log = load_audit_log()
 
-            if response.status_code == 200:
+            if audit_log.empty:
 
-                audit_path = os.path.join(
-                    BASE_DIR,
-                    "logs",
-                    "audit_log.csv"
+                st.info(
+                    "No audit records have been created yet."
                 )
-
-
-                if os.path.exists(
-                    audit_path
-                ):
-
-                    audit_log = pd.read_csv(
-                        audit_path
-                    )
-
-
-                else:
-
-                    audit_log = pd.DataFrame()
-
 
             else:
 
-                audit_log = pd.DataFrame()
+              st.metric(
+                  "Total Audit Records",
+                  len(audit_log)
+              )
 
+              st.dataframe(
+                  audit_log,
+                  use_container_width=True,
+                  height=500
+              )
 
-        except Exception:
+              audit_csv = audit_log.to_csv(
+                  index=False
+              ).encode(
+                  "utf-8"
+              )
 
-            audit_log = pd.DataFrame()
-
-
-        if audit_log.empty:
-
-            st.info(
-                "No audit records have been created yet."
-            )
-
-
-        else:
-
-            st.metric(
-                "Total Audit Records",
-                len(audit_log)
-            )
-
-
-            st.dataframe(
-                audit_log,
-                use_container_width=True,
-                height=500
-            )
-
-
-            audit_csv = audit_log.to_csv(
-                index=False
-            ).encode(
-                "utf-8"
-            )
-
-
-            st.download_button(
-                "Download Audit Trail",
-                audit_csv,
-                "audit_log.csv",
-                "text/csv",
-                use_container_width=True
-            )
-
+              st.download_button(
+                  "Download Audit Trail",
+                  audit_csv,
+                  "audit_log.csv",
+                  "text/csv",
+                  use_container_width=True
+              )
 
 if __name__ == "__main__":
 
